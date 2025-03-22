@@ -6,6 +6,9 @@ class FavouritesProvider with ChangeNotifier {
 
   List<ServiceOption> get favorites => _favorites;
 
+  double get totalPrice =>
+      _favorites.fold<double>(0, (sum, item) => sum + item.price);
+
   void toggleFavorite(ServiceOption option) {
     if (_favorites.contains(option)) {
       _favorites.remove(option);
@@ -15,7 +18,5 @@ class FavouritesProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  bool isFavorite(ServiceOption option) {
-    return _favorites.contains(option);
-  }
+  bool isFavorite(ServiceOption option) => _favorites.contains(option);
 }
