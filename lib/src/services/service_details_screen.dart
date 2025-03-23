@@ -29,13 +29,28 @@ class _ServiceDetailPageState extends State<ServiceDetailPage> {
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: Column(
-        children: [
-          _buildImageCarousel(),
-          const SizedBox(height: 10),
-          _buildCarouselIndicator(),
-          const SizedBox(height: 20),
-          Expanded(child: _buildServiceList(favoritesProvider)),
+      body: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(child: _buildImageCarousel()),
+          SliverToBoxAdapter(child: _buildCarouselIndicator()),
+          const SliverToBoxAdapter(child: SizedBox(height: 20)),
+          SliverToBoxAdapter(
+            child: Align(
+              alignment: Alignment.center,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: 600,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: widget.item.options.map((option) {
+                    return _buildServiceItem(context, favoritesProvider,
+                        widget.item.options.indexOf(option));
+                  }).toList(),
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -45,6 +60,7 @@ class _ServiceDetailPageState extends State<ServiceDetailPage> {
     return CarouselSlider(
       options: CarouselOptions(
         height: 200,
+        viewportFraction: 1.0,
         autoPlay: true,
         enlargeCenterPage: true,
         onPageChanged: (index, reason) => setState(() => _currentIndex = index),
@@ -52,50 +68,60 @@ class _ServiceDetailPageState extends State<ServiceDetailPage> {
       items: widget.item.images
           .map((image) => ClipRRect(
                 borderRadius: BorderRadius.circular(15),
-                child: Image.asset(image,
-                    fit: BoxFit.cover, width: double.infinity),
+                child: Image.asset(
+                  image,
+                  fit: BoxFit.cover,
+                  width: MediaQuery.of(context).size.width,
+                ),
               ))
           .toList(),
     );
   }
 
   Widget _buildCarouselIndicator() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(
-        widget.item.images.length,
-        (index) => Container(
-          width: 10,
-          height: 10,
-          margin: const EdgeInsets.symmetric(horizontal: 4),
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: _currentIndex == index ? Colors.white : Colors.grey,
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: List.generate(
+          widget.item.images.length,
+          (index) => Container(
+            width: 10,
+            height: 10,
+            margin: const EdgeInsets.symmetric(horizontal: 4),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: _currentIndex == index ? Colors.white : Colors.grey,
+            ),
           ),
         ),
       ),
     );
   }
 
-// Обновленный код виджета
-  Widget _buildServiceList(FavouritesProvider favoritesProvider) {
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      itemCount: widget.item.options.length,
-      itemBuilder: (context, index) {
-        final option = widget.item.options[index];
-        final isFavorite = favoritesProvider.isFavorite(option);
+  Widget _buildServiceItem(
+      BuildContext context, FavouritesProvider provider, int index) {
+    final option = widget.item.options[index];
+    final isFavorite = provider.isFavorite(option);
 
-        // Форматирование цены с префиксом
-        final priceText = option.pricePrefix.isNotEmpty
-            ? '${option.pricePrefix} ${option.price.toStringAsFixed(0)}₸'
-            : '${option.price.toStringAsFixed(0)}₸';
+    final priceText = option.pricePrefix.isNotEmpty
+        ? '${option.pricePrefix} ${option.price.toStringAsFixed(0)}₸'
+        : '${option.price.toStringAsFixed(0)}₸';
 
-        return Card(
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: SizedBox(
+        width: double.infinity,
+        child: Card(
           color: Colors.grey[900],
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
           child: ListTile(
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 20,
+              vertical: 12,
+            ),
             title: Text(option.name,
                 style: const TextStyle(
                     fontSize: 18,
@@ -104,13 +130,15 @@ class _ServiceDetailPageState extends State<ServiceDetailPage> {
             subtitle: Text(priceText,
                 style: const TextStyle(fontSize: 16, color: Colors.grey)),
             trailing: IconButton(
-              icon: Icon(isFavorite ? Icons.favorite : Icons.favorite_border,
-                  color: isFavorite ? Colors.pink : Colors.grey),
-              onPressed: () => favoritesProvider.toggleFavorite(option),
+              icon: Icon(
+                isFavorite ? Icons.favorite : Icons.favorite_border,
+                color: isFavorite ? Colors.pink : Colors.grey,
+              ),
+              onPressed: () => provider.toggleFavorite(option),
             ),
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }
